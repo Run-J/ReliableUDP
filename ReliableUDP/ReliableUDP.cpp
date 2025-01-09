@@ -25,6 +25,9 @@ const float SendRate = 1.0f / 30.0f;
 const float TimeOut = 10.0f;
 const int PacketSize = 256;
 
+
+// Class Name: FlowControl
+// Class Description:
 class FlowControl
 {
 public:
@@ -115,6 +118,8 @@ private:
 	float penalty_reduction_accumulator;
 };
 
+
+
 // ----------------------------------------------
 
 int main(int argc, char* argv[])
@@ -133,7 +138,7 @@ int main(int argc, char* argv[])
 	if (argc >= 2)
 	{
 		int a, b, c, d;
-#pragma warning(disable: 4996)
+#pragma warning(suppress : 4996)
 		if (sscanf(argv[1], "%d.%d.%d.%d", &a, &b, &c, &d))
 		{
 			mode = Client;
@@ -141,8 +146,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	// initialize
-
+	// First, let's initialize sockets
 	if (!InitializeSockets())
 	{
 		printf("failed to initialize sockets\n");
@@ -265,6 +269,8 @@ int main(int argc, char* argv[])
 		net::wait(DeltaTime);
 	}
 
+
+	// After use program, we have to shutdown sockets; releasing resources from the Winsock library
 	ShutdownSockets();
 
 	return 0;

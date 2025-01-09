@@ -68,8 +68,13 @@ namespace net
 
 #endif
 
+
+
+
 	// internet address
 
+	// Class Name: Address
+	// Class Description?
 	class Address
 	{
 	public:
@@ -149,15 +154,20 @@ namespace net
 		unsigned short port;
 	};
 
+
+
+
+
+
 	// sockets
 
 	inline bool InitializeSockets()
 	{
 #if PLATFORM == PLATFORM_WINDOWS
-		WSADATA WsaData;
-		return WSAStartup(MAKEWORD(2, 2), &WsaData) != NO_ERROR;
+		WSADATA WsaData; // Define a WSADATA structure that stores initialization information for the Winsock library
+		return WSAStartup(MAKEWORD(2, 2), &WsaData) == NO_ERROR; // Initialize the Winsock library and check for success
 #else
-		return true;
+		return true; // For non-Windows platforms, return true to indicate successful initialization
 #endif
 	}
 
@@ -168,6 +178,13 @@ namespace net
 #endif
 	}
 
+
+
+
+
+
+	// Class Name: Socket
+	// Class Description:
 	class Socket
 	{
 	public:
@@ -310,8 +327,16 @@ namespace net
 		int socket;
 	};
 
-	// connection
 
+
+
+
+
+
+	// connection
+	
+	// Class Name: Connection
+	// Class Description:
 	class Connection
 	{
 	public:
@@ -557,12 +582,18 @@ namespace net
 		float timeout;
 
 		bool running;
-		Mode mode;
-		State state;
+		Mode mode;		// None, Client, Server
+		State state;	// Disconnected, Listening, Connecting, ConnectFail, Connected
 		Socket socket;
 		float timeoutAccumulator;
 		Address address;
 	};
+
+
+
+
+
+
 
 	// packet queue to store information about sent and received packets sorted in sequence order
 	//  + we define ordering using the "sequence_more_recent" function, this works provided there is a large gap when sequence wrap occurs
@@ -584,6 +615,13 @@ namespace net
 			);
 	}
 
+
+
+
+
+
+	// Class Name: PacketQueue
+	// Class Description:
 	class PacketQueue : public std::list<PacketData>
 	{
 	public:
@@ -642,10 +680,19 @@ namespace net
 		}
 	};
 
+
+
+
+
+
+
+
 	// reliability system to support reliable connection
 	//  + manages sent, received, pending ack and acked packet queues
 	//  + separated out from reliable connection because it is quite complex and i want to unit test it!
 
+	// Class Name: ReliabilitySystem
+	// Class Description:
 	class ReliabilitySystem
 	{
 	public:
@@ -969,8 +1016,18 @@ namespace net
 		PacketQueue ackedQueue;				// acked packets (kept until rtt_maximum * 2)
 	};
 
-	// connection with reliability (seq/ack)
 
+
+
+
+
+
+
+
+	// connection with reliability (seq/ack)
+	
+	// Class Name: ReliableConnection
+	// Class Description:
 	class ReliableConnection : public Connection
 	{
 	public:
