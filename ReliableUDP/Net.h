@@ -48,6 +48,8 @@
 #include <algorithm>
 #include <functional>
 
+const int PacketSizeHack = 256 + 128;
+
 namespace net
 {
 	// platform independent wait for n seconds
@@ -202,7 +204,7 @@ namespace net
 			address.sin_addr.s_addr = INADDR_ANY;
 			address.sin_port = htons((unsigned short)port);
 
-			if (bind(socket, (const sockaddr*)&address, sizeof(sockaddr_in)) < 0)
+			if (::bind(socket, (const sockaddr*)&address, sizeof(sockaddr_in)) < 0)
 			{
 				printf("failed to bind socket\n");
 				Close();
@@ -443,30 +445,53 @@ namespace net
 			assert(running);
 			if (address.GetAddress() == 0)
 				return false;
-			unsigned char packet[size + 4];
+
+			// use PacketSizeHack declear the fixed array
+			unsigned char packet[PacketSizeHack] = {'\0'};
+
+			// Check if the data size exceeds the PacketSizeHack limit
+			if (size + 4 > PacketSizeHack)
+			{
+				printf("Error: Packet size exceeds maximum allowed size!\n");
+				return false;
+			}
+
+			// Fill in protocol headers
 			packet[0] = (unsigned char)(protocolId >> 24);
 			packet[1] = (unsigned char)((protocolId >> 16) & 0xFF);
 			packet[2] = (unsigned char)((protocolId >> 8) & 0xFF);
 			packet[3] = (unsigned char)((protocolId) & 0xFF);
+
+			// Copy the data
 			std::memcpy(&packet[4], data, size);
+
+			// Send packet
 			return socket.Send(address, packet, size + 4);
 		}
 
 		virtual int ReceivePacket(unsigned char data[], int size)
 		{
 			assert(running);
-			unsigned char packet[size + 4];
+
+			// Use PacketSizeHack as the size of the local array
+			unsigned char packet[PacketSizeHack] = { '\0' };
+
 			Address sender;
-			int bytes_read = socket.Receive(sender, packet, size + 4);
+			int bytes_read = socket.Receive(sender, packet, PacketSizeHack); // Use PacketSizeHack as the receive buffer size
+
 			if (bytes_read == 0)
 				return 0;
 			if (bytes_read <= 4)
 				return 0;
+
+			// Check if the protocol ID matches
 			if (packet[0] != (unsigned char)(protocolId >> 24) ||
 				packet[1] != (unsigned char)((protocolId >> 16) & 0xFF) ||
 				packet[2] != (unsigned char)((protocolId >> 8) & 0xFF) ||
 				packet[3] != (unsigned char)(protocolId & 0xFF))
 				return 0;
+
+			// Handle connection in server mode
 			if (mode == Server && !IsConnected())
 			{
 				printf("server accepts connection from client %d.%d.%d.%d:%d\n",
@@ -475,6 +500,8 @@ namespace net
 				address = sender;
 				OnConnect();
 			}
+
+			// Handle connection in client mode
 			if (sender == address)
 			{
 				if (mode == Client && state == Connecting)
@@ -484,9 +511,15 @@ namespace net
 					OnConnect();
 				}
 				timeoutAccumulator = 0.0f;
-				memcpy(data, &packet[4], bytes_read - 4);
-				return bytes_read - 4;
+
+				// Copy data to the caller-provided buffer
+				int data_size = bytes_read - 4;
+				if (data_size > size) // Prevent buffer overflow
+					data_size = size;
+				memcpy(data, &packet[4], data_size);
+				return data_size;
 			}
+
 			return 0;
 		}
 
@@ -969,14 +1002,29 @@ namespace net
 			}
 #endif
 			const int header = 12;
-			unsigned char packet[header + size];
+
+			// Use PacketSizeHack as the size of the local array
+			unsigned char packet[PacketSizeHack] = { '\0' };
+
+			// Ensure the packet size does not exceed PacketSizeHack
+			if (size + header > PacketSizeHack)
+			{
+				printf("Error: Packet size exceeds maximum allowed size!\n");
+				return false;
+			}
+
 			unsigned int seq = reliabilitySystem.GetLocalSequence();
 			unsigned int ack = reliabilitySystem.GetRemoteSequence();
 			unsigned int ack_bits = reliabilitySystem.GenerateAckBits();
+
+			// Write header and copy data into the packet
 			WriteHeader(packet, seq, ack, ack_bits);
 			std::memcpy(packet + header, data, size);
+
+			// Send the packet
 			if (!Connection::SendPacket(packet, size + header))
 				return false;
+
 			reliabilitySystem.PacketSent(size);
 			return true;
 		}
@@ -984,21 +1032,42 @@ namespace net
 		int ReceivePacket(unsigned char data[], int size)
 		{
 			const int header = 12;
+
+			// Check if the provided buffer size is too small to hold the header
 			if (size <= header)
 				return false;
-			unsigned char packet[header + size];
+
+			// Use PacketSizeHack as the size of the local array
+			unsigned char packet[PacketSizeHack] = { '\0' };;
+
+			// Ensure the packet size does not exceed PacketSizeHack
+			if (size + header > PacketSizeHack)
+			{
+				printf("Error: Packet size exceeds maximum allowed size!\n");
+				return false;
+			}
+
+			// Receive the packet
 			int received_bytes = Connection::ReceivePacket(packet, size + header);
 			if (received_bytes == 0)
 				return false;
 			if (received_bytes <= header)
 				return false;
+
+			// Read the header from the packet
 			unsigned int packet_sequence = 0;
 			unsigned int packet_ack = 0;
 			unsigned int packet_ack_bits = 0;
 			ReadHeader(packet, packet_sequence, packet_ack, packet_ack_bits);
+
+			// Update the reliability system with the received packet
 			reliabilitySystem.PacketReceived(packet_sequence, received_bytes - header);
 			reliabilitySystem.ProcessAck(packet_ack, packet_ack_bits);
+
+			// Copy the data to the caller-provided buffer
 			std::memcpy(data, packet + header, received_bytes - header);
+
+			// Return the number of data bytes received
 			return received_bytes - header;
 		}
 
