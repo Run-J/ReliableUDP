@@ -124,19 +124,19 @@ private:
 
 int main(int argc, char* argv[])
 {
-	// parse command line
-
 	enum Mode
 	{
 		Client,
 		Server
 	};
 
+	// Parse command line arguments to determine mode of operation (Server or Client)
 	Mode mode = Server;
 	Address address;
 
 	if (argc >= 2)
 	{
+		// If IP is passed, the mode is set to Client and the destination address is resolved
 		int a, b, c, d;
 #pragma warning(suppress : 4996)
 		if (sscanf(argv[1], "%d.%d.%d.%d", &a, &b, &c, &d))
@@ -146,42 +146,57 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	// First, let's initialize sockets
+
+	// First, Let's initialize the network socket library (call WSAStartup on Windows)
 	if (!InitializeSockets())
 	{
 		printf("failed to initialize sockets\n");
 		return 1;
 	}
 
+
+	// Then, Create a ReliableConnection object (ProtocolId for protocolID, Timeout for timeout)
 	ReliableConnection connection(ProtocolId, TimeOut);
 
+
+	// Select port based on mode
 	const int port = mode == Server ? ServerPort : ClientPort;
 
+
+	// Start the connection (bind port)
 	if (!connection.Start(port))
 	{
 		printf("could not start connection on port %d\n", port);
 		return 1;
 	}
 
+
+	// Set connection status of server and client
 	if (mode == Client)
-		connection.Connect(address);
+		connection.Connect(address); // Set the connection status to Connecting and store the destination server address
 	else
-		connection.Listen();
+		connection.Listen(); // Set the connection status to Listening
+
+
+
+
 
 	bool connected = false;
 	float sendAccumulator = 0.0f;
 	float statsAccumulator = 0.0f;
 
 	FlowControl flowControl;
+	int packetCounter = 0;
 
 	while (true)
 	{
-		// update flow control
-
+		// Update flow control (adjust send rate based on RTT)
 		if (connection.IsConnected())
 			flowControl.Update(DeltaTime, connection.GetReliabilitySystem().GetRoundTripTime() * 1000.0f);
 
+
 		const float sendRate = flowControl.GetSendRate();
+
 
 		// detect changes in connection state
 
@@ -204,25 +219,41 @@ int main(int argc, char* argv[])
 			break;
 		}
 
-		// send and receive packets
 
+		// Send Heartbeat Packet
 		sendAccumulator += DeltaTime;
+
 
 		while (sendAccumulator > 1.0f / sendRate)
 		{
 			unsigned char packet[PacketSize];
-			memset(packet, 0, sizeof(packet));
+			memset(packet, 0, sizeof(packet)); // Clear the buffer
+
+
+			char message[256];
+			snprintf(message, sizeof(message), "Hello World <<%d>>", packetCounter);
+			memcpy(packet, message, strlen(message) + 1);
+
+
 			connection.SendPacket(packet, sizeof(packet));
 			sendAccumulator -= 1.0f / sendRate;
+
+			packetCounter++;
 		}
 
+
+		// Receive the Packet
 		while (true)
 		{
 			unsigned char packet[256];
 			int bytes_read = connection.ReceivePacket(packet, sizeof(packet));
 			if (bytes_read == 0)
 				break;
+		
+			printf("Received: %s\n", packet);
 		}
+
+
 
 		// show packets that were acked this frame
 
@@ -239,9 +270,11 @@ int main(int argc, char* argv[])
 		}
 #endif
 
-		// update connection
 
+		
+		// Update connection status (timeout detection, statistics)
 		connection.Update(DeltaTime);
+
 
 		// show connection stats
 

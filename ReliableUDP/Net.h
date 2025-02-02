@@ -74,7 +74,7 @@ namespace net
 	// internet address
 
 	// Class Name: Address
-	// Class Description?
+	// Class Description: Handling IP addresses + ports
 	class Address
 	{
 	public:
@@ -150,8 +150,8 @@ namespace net
 
 	private:
 
-		unsigned int address;
-		unsigned short port;
+		unsigned int address; // 32-bit IPv4 address (e.g. 0x11223344 for 192.168.10.06)
+		unsigned short port; // port number
 	};
 
 
@@ -184,7 +184,7 @@ namespace net
 
 
 	// Class Name: Socket
-	// Class Description:
+	// Class Description: Encapsulates UDP socket operations
 	class Socket
 	{
 	public:
@@ -199,6 +199,9 @@ namespace net
 			Close();
 		}
 
+
+		// Function Name: Open
+		// Function Description: Create and bind a UDP socket
 		bool Open(unsigned short port)
 		{
 			assert(!IsOpen());
@@ -273,6 +276,9 @@ namespace net
 			return socket != 0;
 		}
 
+
+		// Function Name: Send
+		// Function Description: Send Packet
 		bool Send(const Address& destination, const void* data, int size)
 		{
 			assert(data);
@@ -336,7 +342,7 @@ namespace net
 	// connection
 	
 	// Class Name: Connection
-	// Class Description:
+	// Class Description: Managing Connection Status
 	class Connection
 	{
 	public:
@@ -363,6 +369,11 @@ namespace net
 				Stop();
 		}
 
+
+		// Function Name: Start
+		// Function Description:
+		//			- 1: Call Socket::Open(port) to create and bind a UDP socket
+		//			- 2: Set the running flag to true
 		bool Start(int port)
 		{
 			assert(!running);
@@ -392,25 +403,37 @@ namespace net
 			return running;
 		}
 
+
+		// Function Name: Listen
+		//
 		void Listen()
 		{
 			printf("server listening for connection\n");
+
 			bool connected = IsConnected();
-			ClearData();
-			if (connected)
+			ClearData(); // clear the privous data
+			
+			if (connected) //
 				OnDisconnect();
+			
 			mode = Server;
 			state = Listening;
 		}
 
+
+		// Function Name: Connect
+		// 
 		void Connect(const Address& address)
 		{
 			printf("client connecting to %d.%d.%d.%d:%d\n",
 				address.GetA(), address.GetB(), address.GetC(), address.GetD(), address.GetPort());
+
 			bool connected = IsConnected();
 			ClearData();
+
 			if (connected)
 				OnDisconnect();
+
 			mode = Client;
 			state = Connecting;
 			this->address = address;
@@ -465,6 +488,8 @@ namespace net
 			}
 		}
 
+		// Function Name: SendPacket
+		//
 		virtual bool SendPacket(const unsigned char data[], int size)
 		{
 			assert(running);
@@ -494,6 +519,9 @@ namespace net
 			return socket.Send(address, packet, size + 4);
 		}
 
+
+		// Function Name: ReceivePacket
+		//
 		virtual int ReceivePacket(unsigned char data[], int size)
 		{
 			assert(running);
@@ -569,7 +597,7 @@ namespace net
 			address = Address();
 		}
 
-		enum State
+		enum State //Key State
 		{
 			Disconnected,
 			Listening,
@@ -692,7 +720,7 @@ namespace net
 	//  + separated out from reliable connection because it is quite complex and i want to unit test it!
 
 	// Class Name: ReliabilitySystem
-	// Class Description:
+	// Class Description: Responsible for handling packet sequence numbers, acknowledgements, timeout retransmissions, etc.
 	class ReliabilitySystem
 	{
 	public:
@@ -1027,7 +1055,9 @@ namespace net
 	// connection with reliability (seq/ack)
 	
 	// Class Name: ReliableConnection
-	// Class Description:
+	// Class Description: 
+	//			-- Inherited from Connection, adds reliable transmission 
+	//			-- based on UDP (sequence number, acknowledgement, timeout retransmission)
 	class ReliableConnection : public Connection
 	{
 	public:
@@ -1085,6 +1115,7 @@ namespace net
 			reliabilitySystem.PacketSent(size);
 			return true;
 		}
+
 
 		int ReceivePacket(unsigned char data[], int size)
 		{
@@ -1204,7 +1235,7 @@ namespace net
 		unsigned int packet_loss_mask;			// mask sequence number, if non-zero, drop packet - for unit test only
 #endif
 
-		ReliabilitySystem reliabilitySystem;	// reliability system: manages sequence numbers and acks, tracks network stats etc.
+		ReliabilitySystem reliabilitySystem;	// reliability system: manages sequence numbers and acks, tracks network stats etc
 	};
 }
 
