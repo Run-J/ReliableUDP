@@ -133,16 +133,42 @@ int main(int argc, char* argv[])
 	// Parse command line arguments to determine mode of operation (Server or Client)
 	Mode mode = Server;
 	Address address;
+	const char* fileName = NULL; // for file that want to transfer
 
 	if (argc >= 2)
 	{
 		// If IP is passed, the mode is set to Client and the destination address is resolved
 		int a, b, c, d;
 #pragma warning(suppress : 4996)
-		if (sscanf(argv[1], "%d.%d.%d.%d", &a, &b, &c, &d))
+		if (sscanf(argv[1], "%d.%d.%d.%d", &a, &b, &c, &d) == 4)
 		{
 			mode = Client;
 			address = Address(a, b, c, d, ServerPort);
+		}
+		else
+		{
+			fprintf(stderr, "Invalid Ip Address !!!\n");
+			return 1;
+		}
+
+		if (a < 0 || a > 255 || b < 0 || b > 255 || c < 0 || c > 255 || d < 0 || d > 255)
+		{
+			fprintf(stderr, "Out of IPv4 range !!!! Ex. 127.0.0.1\n");
+			return 1;
+		}
+
+
+		// Check if user specify the filename
+		if (argc >= 3)
+		{
+			// Retrieving the file from disk
+			fileName = argv[2];
+			printf("The file will be transfered: %s\n", fileName);
+		}
+		else
+		{
+			fprintf(stderr, "Please provide the filename you want to transfer !!!\n Usage: %s <IPv4> <fileName>\n", argv[0]);
+			return 1;
 		}
 	}
 
@@ -186,7 +212,7 @@ int main(int argc, char* argv[])
 	float statsAccumulator = 0.0f;
 
 	FlowControl flowControl;
-	int packetCounter = 0;
+
 
 	while (true)
 	{
@@ -230,15 +256,9 @@ int main(int argc, char* argv[])
 			memset(packet, 0, sizeof(packet)); // Clear the buffer
 
 
-			char message[256];
-			snprintf(message, sizeof(message), "Hello World <<%d>>", packetCounter);
-			memcpy(packet, message, strlen(message) + 1);
-
 
 			connection.SendPacket(packet, sizeof(packet));
 			sendAccumulator -= 1.0f / sendRate;
-
-			packetCounter++;
 		}
 
 
