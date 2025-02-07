@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "Net.h"
+#include "FileProcess.h"
 
 
 //#define SHOW_ACKS
@@ -224,6 +225,8 @@ int main(int argc, char* argv[])
 		const float sendRate = flowControl.GetSendRate();
 
 
+
+
 		// detect changes in connection state
 
 		if (mode == Server && connected && !connection.IsConnected())
@@ -233,10 +236,25 @@ int main(int argc, char* argv[])
 			connected = false;
 		}
 
+
+		FileBlock fileBlock;
+
 		if (!connected && connection.IsConnected())
 		{
 			printf("client connected to server\n");
 			connected = true;
+
+			// if using client mode, then load file from computer and split the whole file content into multiple blocks.
+			if (mode == Client)
+			{
+				if (fileBlock.LoadFile(fileName) != 0)
+				{
+					fprintf(stderr, "Some error happen when loading file.\n");
+					return -1;
+				}
+
+			}
+
 		}
 
 		if (!connected && connection.ConnectFailed())
@@ -244,6 +262,8 @@ int main(int argc, char* argv[])
 			printf("connection failed\n");
 			break;
 		}
+
+
 
 
 		// Send Heartbeat Packet
@@ -272,6 +292,7 @@ int main(int argc, char* argv[])
 		
 			printf("Received: %s\n", packet);
 		}
+
 
 
 
