@@ -215,6 +215,10 @@ int main(int argc, char* argv[])
 	FlowControl flowControl;
 
 
+	FileBlock fileBlock;
+	int fileLoaded = -1;  // indicates if file loaddded
+
+	// The main logic of load, send, recieve 
 	while (true)
 	{
 		// Update flow control (adjust send rate based on RTT)
@@ -237,7 +241,6 @@ int main(int argc, char* argv[])
 		}
 
 
-		FileBlock fileBlock;
 
 		if (!connected && connection.IsConnected())
 		{
@@ -253,6 +256,7 @@ int main(int argc, char* argv[])
 					return -1;
 				}
 
+				fileLoaded = 0;
 			}
 
 		}
@@ -266,17 +270,60 @@ int main(int argc, char* argv[])
 
 
 
-		// Send Heartbeat Packet
+		// Send our Packets (Meta + Blocks)
+
+		int done = -1;        // indicates if file sent successfully
+
 		sendAccumulator += DeltaTime;
-
-
 		while (sendAccumulator > 1.0f / sendRate)
 		{
 			unsigned char packet[PacketSize];
 			memset(packet, 0, sizeof(packet)); // Clear the buffer
 
+			static int metaSent = -1; // metaSent flags if metadata has been sent
+			static int n = 0; // n indicates current index of blocks
+
+			if (mode == Client && fileLoaded == 0)
+			{
+				// send the meta packet first if haven't send the meta packet yet
+				if (metaSent != 0)
+				{
+					printf("Sending %s, %llu bytes, %llu total slices.\n",
+						fileBlock.GetMetaPacket().filename,
+						(unsigned long long)fileBlock.GetMetaPacket().fileSize, // here using long long, bcoz we were using uint_64
+						(unsigned long long)fileBlock.GetMetaPacket().totalBlocks);
+
+					// Copy the entire MetaPacket (fixed 256 bytes) into a packet and send it out later
+					memcpy(packet, &fileBlock.GetMetaPacket(), PacketSize);
+					metaSent = 0;
+
+				}
+				else // send the BlockPacket if the meta packet has been sent
+				{
+					if (n < fileBlock.GetBlocks().size())
+					{
+						printf("Sending %d/%llu...\n",
+							n + 1,
+							(unsigned long long)fileBlock.GetMetaPacket().totalBlocks);
+
+						memcpy(packet, &fileBlock.GetBlocks()[n], PacketSize);
+						n++;
 
 
+					}
+					else
+					{
+						// tell the user that all file content sent
+						printf("Finish Sent file: %s\n", fileName);
+						done = 0;
+						return 0;
+					}
+				
+				}
+
+			}
+
+			// Keep Send Heartbeat Packet while sending the file packets
 			connection.SendPacket(packet, sizeof(packet));
 			sendAccumulator -= 1.0f / sendRate;
 		}
@@ -289,9 +336,32 @@ int main(int argc, char* argv[])
 			int bytes_read = connection.ReceivePacket(packet, sizeof(packet));
 			if (bytes_read == 0)
 				break;
-		
-			printf("Received: %s\n", packet);
+
+			//printf("Received: %s\n", packet);
+
+			if (mode == Server)
+			{
+				if (bytes_read > 0)
+				{
+					printf("Received packet, size: %d bytes\n", bytes_read);
+					MetaPacket* meta = reinterpret_cast<MetaPacket*>(packet);
+					if (meta->packetType == TYPE_META)
+					{
+						printf("#####################Meta Packet: filename = %s, fileSize = %llu, totalBlocks = %llu\n",
+							meta->filename,
+							(unsigned long long)meta->fileSize,
+							(unsigned long long)meta->totalBlocks);
+					}
+					else if (meta->packetType == TYPE_DATA)
+					{
+						BlockPacket* block = reinterpret_cast<BlockPacket*>(packet);
+						printf("##################Data Packet: localSequence = %llu\n",
+							(unsigned long long)block->localSequence);
+					}
+				}
+			}
 		}
+		
 
 
 

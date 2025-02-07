@@ -34,6 +34,11 @@ private:
 
 
 public:
+    // Accessor fo blocks
+    vector<BlockPacket> GetBlocks(void);
+
+    // Accessor of fileName
+    const MetaPacket& GetMetaPacket(void);
 
     // LoadFile:
     //   Loads the file from disk, splits it into blocks for transmission,

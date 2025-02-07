@@ -1,6 +1,14 @@
 #include "FileProcess.h"
 
+vector<BlockPacket> FileBlock::GetBlocks(void)
+{
+    return blocks;
+}
 
+const MetaPacket& FileBlock::GetMetaPacket(void)
+{
+    return metaPacket;
+}
 
 //---------------------------------------------------------------------
 // LoadFile: Loads the file, computes MD5 and slices file into blocks
