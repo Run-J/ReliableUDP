@@ -32,10 +32,10 @@
     <ClInclude Include="md5.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FileProcess.h">
+    <ClInclude Include="Protocol.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Protocol.h">
+    <ClInclude Include="FileProcess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
