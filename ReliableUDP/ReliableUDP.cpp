@@ -135,6 +135,7 @@ int main(int argc, char* argv[])
 	Mode mode = Server;
 	Address address;
 	const char* fileName = NULL; // for file that want to transfer
+	bool md5Test = false; // for test that verify file integrity function
 
 	if (argc >= 2)
 	{
@@ -165,6 +166,12 @@ int main(int argc, char* argv[])
 			// Retrieving the file from disk
 			fileName = argv[2];
 			printf("The file will be transfered: %s\n", fileName);
+
+			if (argc >= 4)
+			{
+				md5Test = true;
+				printf("**MD5 test mode enabled.\n");
+			}
 		}
 		else
 		{
@@ -217,9 +224,10 @@ int main(int argc, char* argv[])
 
 	FileBlock fileBlock;
 	int fileLoaded = -1;  // indicates if file loaddded
+	int done = -1;        // indicates if file sent successfully
 
 	// The main logic of load, send, recieve 
-	while (true)
+	while ( done != 0)
 	{
 		// Update flow control (adjust send rate based on RTT)
 		if (connection.IsConnected())
@@ -272,8 +280,6 @@ int main(int argc, char* argv[])
 
 		// Send our Packets (Meta + Blocks)
 
-		int done = -1;        // indicates if file sent successfully
-
 		sendAccumulator += DeltaTime;
 		while (sendAccumulator > 1.0f / sendRate)
 		{
@@ -310,17 +316,17 @@ int main(int argc, char* argv[])
 						n++;
 
 						// here is temprory MD5 hard code test
-#ifdef MD5_TEST
-						packet[10] = 18; // 'R'
-						packet[11] = 10; // 'J'
-#endif
+						if (md5Test)
+						{
+							packet[10] = 18; // 'R'
+							packet[11] = 10; // 'J'
+						}
 					}
 					else
 					{
 						// tell the user that all file content sent
 						printf("Finish Sent file: %s\n", fileName);
 						done = 0;
-						return 0;
 					}
 				
 				}
@@ -346,13 +352,24 @@ int main(int argc, char* argv[])
 			// only server have to execute the following things
 			if (mode == Server)
 			{
-				if (bytes_read > 0)
+				if (fileBlock.FinishedReceivedAllData() != 0) 
 				{
+					printf("----------------------------------------------------------------\n");
+					printf("Receiving data...\n");
 					int ret = fileBlock.ProcessReceivedPacket(packet, bytes_read);
 					if (ret != 0)
 					{
 						printf("Processed non-meta/block packet.\n");
 					}
+					printf("----------------------------------------------------------------\n");
+				}
+				else
+				{
+					printf("*****************************************************************\n");
+					printf("All data received!\n");
+					printf("Calculating the validation...\n");
+
+					fileBlock.VerifyFileContent();
 				}
 			}
 		}

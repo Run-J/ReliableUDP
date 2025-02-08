@@ -1,5 +1,56 @@
 #include "FileProcess.h"
 
+
+// Function Name: VerifyFileContent
+// Return:
+//   bool - Returns true if the MD5 values match, false otherwise.
+// Function Description:
+//      -- Recomputes the MD5 checksum of the loaded file and compares it with the stored md5 value in metaPacket.
+bool FileBlock::VerifyFileContent()
+{
+    // Compute MD5 of fileData
+    uint8_t computedMD5[MD5_HASH_LENGTH] = { 0 };
+    MD5Context ctx;
+    md5Init(&ctx);
+
+    md5Update(&ctx, fileData.data(), fileData.size());
+    md5Finalize(&ctx);
+    memcpy(computedMD5, ctx.digest, MD5_HASH_LENGTH);
+
+    // Compare the computed MD5 with the metaPacket's MD5.
+    if (memcmp(metaPacket.md5, computedMD5, MD5_HASH_LENGTH) == 0)
+    {
+        printf("Checksum verification successful.\n");
+        return true;
+    }
+    else
+    {
+        printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+        printf("Checksum verification failed.\n");
+        printf("Computed MD5: ");
+        for (int i = 0; i < MD5_HASH_LENGTH; i++)
+        {
+            printf("%02x", computedMD5[i]);
+        }
+        printf("\nExpected MD5: ");
+        for (int i = 0; i < MD5_HASH_LENGTH; i++)
+        {
+            printf("%02x", metaPacket.md5[i]);
+        }
+        printf("\n");
+        printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+        return false;
+    }
+}
+
+
+//
+//
+int FileBlock::FinishedReceivedAllData()
+{
+    return allDone;
+}
+
 //
 //
 int FileBlock::ProcessReceivedPacket(const unsigned char* packet, size_t packetSize)
@@ -56,6 +107,13 @@ int FileBlock::ProcessReceivedPacket(const unsigned char* packet, size_t packetS
         // print debug message
         printf("Received Data Packet: localSequence = %llu, copied %zu bytes\n",
             (unsigned long long)seq, copySize);
+
+
+        // Check if Received all of data
+        if (block->localSequence == metaPacket.totalBlocks - 1)
+        {
+            allDone = 0;
+        }
 
         return 0;
     }

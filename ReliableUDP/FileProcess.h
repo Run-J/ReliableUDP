@@ -26,6 +26,9 @@ class FileBlock
 {
 
 private:
+
+    int allDone = -1;                // Flag of received all data from client done; -1 => no-all done, 0 = > all done
+
     MetaPacket metaPacket;           // File metadata (fixed size 256 bytes)
 
     vector<BlockPacket> blocks;      // Vector of file blocks
@@ -35,14 +38,20 @@ private:
 
 public:
 
-    // Parsing received data
-    int ProcessReceivedPacket(const unsigned char* packet, size_t packetSize);
-
     // Accessor fo blocks
     vector<BlockPacket> GetBlocks(void);
 
     // Accessor of fileName
     const MetaPacket& GetMetaPacket(void);
+
+    // Checking document integrity
+    bool VerifyFileContent();
+
+    //  Inform if received all data
+    int FinishedReceivedAllData();
+
+    // Parsing received data
+    int ProcessReceivedPacket(const unsigned char* packet, size_t packetSize);
 
     // LoadFile: Loads the file, computes MD5 and slices file into blocks
     int LoadFile(const char* filename);
@@ -56,14 +65,6 @@ public:
     // Return:
     //   int - Returns the number of bytes written on success, or -1 on error.
     // int SaveFile(const char* filename = nullptr) const;
-
-
-
-    // VerifyFileContent:
-    //   Recomputes the MD5 checksum of the loaded file and compares it with the stored value.
-    // Return:
-    //   bool - Returns true if the MD5 values match, false otherwise.
-    // bool VerifyFileContent();
 
 };
 
