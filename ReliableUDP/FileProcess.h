@@ -34,19 +34,17 @@ private:
 
 
 public:
+
+    // Parsing received data
+    int ProcessReceivedPacket(const unsigned char* packet, size_t packetSize);
+
     // Accessor fo blocks
     vector<BlockPacket> GetBlocks(void);
 
     // Accessor of fileName
     const MetaPacket& GetMetaPacket(void);
 
-    // LoadFile:
-    //   Loads the file from disk, splits it into blocks for transmission,
-    //   and computes the MD5 checksum.
-    // Parameters:
-    //   const char* filename - The file name to load.
-    // Return:
-    //   int - Returns the number of blocks on success, or -1 on error.
+    // LoadFile: Loads the file, computes MD5 and slices file into blocks
     int LoadFile(const char* filename);
 
 

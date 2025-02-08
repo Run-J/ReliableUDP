@@ -309,7 +309,11 @@ int main(int argc, char* argv[])
 						memcpy(packet, &fileBlock.GetBlocks()[n], PacketSize);
 						n++;
 
-
+						// here is temprory MD5 hard code test
+#ifdef MD5_TEST
+						packet[10] = 18; // 'R'
+						packet[11] = 10; // 'J'
+#endif
 					}
 					else
 					{
@@ -322,6 +326,8 @@ int main(int argc, char* argv[])
 				}
 
 			}
+
+
 
 			// Keep Send Heartbeat Packet while sending the file packets
 			connection.SendPacket(packet, sizeof(packet));
@@ -337,26 +343,15 @@ int main(int argc, char* argv[])
 			if (bytes_read == 0)
 				break;
 
-			//printf("Received: %s\n", packet);
-
+			// only server have to execute the following things
 			if (mode == Server)
 			{
 				if (bytes_read > 0)
 				{
-					printf("Received packet, size: %d bytes\n", bytes_read);
-					MetaPacket* meta = reinterpret_cast<MetaPacket*>(packet);
-					if (meta->packetType == TYPE_META)
+					int ret = fileBlock.ProcessReceivedPacket(packet, bytes_read);
+					if (ret != 0)
 					{
-						printf("#####################Meta Packet: filename = %s, fileSize = %llu, totalBlocks = %llu\n",
-							meta->filename,
-							(unsigned long long)meta->fileSize,
-							(unsigned long long)meta->totalBlocks);
-					}
-					else if (meta->packetType == TYPE_DATA)
-					{
-						BlockPacket* block = reinterpret_cast<BlockPacket*>(packet);
-						printf("##################Data Packet: localSequence = %llu\n",
-							(unsigned long long)block->localSequence);
+						printf("Processed non-meta/block packet.\n");
 					}
 				}
 			}

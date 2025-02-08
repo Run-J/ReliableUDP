@@ -1,17 +1,95 @@
 #include "FileProcess.h"
 
+//
+//
+int FileBlock::ProcessReceivedPacket(const unsigned char* packet, size_t packetSize)
+{
+    // Check that the packet is valid and has at least one full packet's size.
+    if (packet == nullptr || packetSize < PACKET_SIZE)
+    {
+        fprintf(stderr, "Invalid packet received.\n");
+        return -1;
+    }
+
+    // Get the packet type from the first byte.
+    uint8_t packetType = packet[0];
+
+    // If the packet type is Meta, update the metaPacket and allocate fileData.
+    if (packetType == TYPE_META)
+    {
+        // Interpret packet as MetaPacket
+        const MetaPacket* meta = reinterpret_cast<const MetaPacket*>(packet);
+
+        // Update the internal metaPacket member (copy all fields)
+        metaPacket = *meta;
+
+        // print debug message
+        printf("Received Meta Packet: filename = %s, fileSize = %llu, totalBlocks = %llu\n",
+            metaPacket.filename,
+            (unsigned long long)metaPacket.fileSize,
+            (unsigned long long)metaPacket.totalBlocks);
+
+        // Allocate fileData space according to metaPacket.fileSize to hold the entire file contents.
+        fileData.resize(static_cast<size_t>(metaPacket.fileSize));
+
+        return 0;
+    }
+    // If the packet type is Data, store the payload into the correct position in fileData.
+    else if (packetType == TYPE_DATA)
+    {
+        // Interpret packet as BlockPacket
+        const BlockPacket* block = reinterpret_cast<const BlockPacket*>(packet);
+
+        // offset = localSequence * PAYLOAD_SIZE
+        uint64_t seq = block->localSequence;
+        size_t offset = static_cast<size_t>(seq * PAYLOAD_SIZE);
+
+        // Determine the number of bytes of data to be copied
+        // For the last block, the actual data may be less than PAYLOAD_SIZE
+        size_t copySize = PAYLOAD_SIZE;
+        if (offset + copySize > fileData.size())
+            copySize = fileData.size() - offset;
+
+        // Copy the payLoad data from the current block to the correct location in fileData.
+        memcpy(fileData.data() + offset, block->payLoad, copySize);
+
+        // print debug message
+        printf("Received Data Packet: localSequence = %llu, copied %zu bytes\n",
+            (unsigned long long)seq, copySize);
+
+        return 0;
+    }
+    else
+    {
+        printf("Received unknown packet type: %d\n", packetType);
+        return -1;
+    }
+}
+
+
+//
+//
 vector<BlockPacket> FileBlock::GetBlocks(void)
 {
     return blocks;
 }
 
+
+//
+//
 const MetaPacket& FileBlock::GetMetaPacket(void)
 {
     return metaPacket;
 }
 
-//---------------------------------------------------------------------
-// LoadFile: Loads the file, computes MD5 and slices file into blocks
+
+// LoadFile:
+//   Loads the file from disk, splits it into blocks for transmission,
+//   and computes the MD5 checksum.
+// Parameters:
+//   const char* filename - The file name to load.
+// Return:
+//   int - Returns the number of blocks on success, or -1 on error.
 int FileBlock::LoadFile(const char* filename)
 {
     // Check that filename is valid
