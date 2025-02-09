@@ -56,6 +56,9 @@ public:
     // LoadFile: Loads the file, computes MD5 and slices file into blocks
     int LoadFile(const char* filename);
 
+    //
+    int SaveFile() const;
+
 
 
     // SaveFile:

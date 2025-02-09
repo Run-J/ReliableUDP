@@ -369,7 +369,11 @@ int main(int argc, char* argv[])
 					printf("All data received!\n");
 					printf("Calculating the validation...\n");
 
-					fileBlock.VerifyFileContent();
+					if (fileBlock.VerifyFileContent())
+					{
+						// Save the data into the file
+						fileBlock.SaveFile();
+					}
 				}
 			}
 		}

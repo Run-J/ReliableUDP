@@ -1,6 +1,36 @@
 #include "FileProcess.h"
 
 
+//
+//
+//
+//
+int FileBlock::SaveFile() const
+{
+    // Open output file using the filename from metaPacket in binary mode.
+    ofstream outFile(metaPacket.filename, ios::binary);
+    if (!outFile)
+    {
+        fprintf(stderr, "Error: Cannot open file for writing: %s\n", metaPacket.filename);
+        return -1;
+    }
+
+    // Write the entire fileData vector to the file.
+    outFile.write(reinterpret_cast<const char*>(fileData.data()), fileData.size());
+    if (!outFile)
+    {
+        fprintf(stderr, "Error: Failed to write all data to file: %s\n", metaPacket.filename);
+        return -1;
+    }
+    outFile.close();
+
+    // Debug: print success message and number of bytes written.
+    printf("File saved successfully: %s, %zu bytes written.\n", metaPacket.filename, fileData.size());
+
+    return 0;
+}
+
+
 // Function Name: VerifyFileContent
 // Return:
 //   bool - Returns true if the MD5 values match, false otherwise.
