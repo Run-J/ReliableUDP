@@ -8,6 +8,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <chrono> // for timmer
 
 #include "Net.h"
 #include "FileProcess.h"
@@ -175,7 +176,7 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			fprintf(stderr, "Please provide the filename you want to transfer !!!\n Usage: %s <IPv4> <fileName>\n", argv[0]);
+			fprintf(stderr, "Please provide the filename you want to transfer !!!\n Usage: %s <IPv4> <fileName> <test(option)>\n", argv[0]);
 			return 1;
 		}
 	}
@@ -224,10 +225,13 @@ int main(int argc, char* argv[])
 
 	FileBlock fileBlock;
 	int fileLoaded = -1;  // indicates if file loaddded
-	int done = -1;        // indicates if file sent successfully
+	int allDone = -1;        // indicates if file sent successfully
+
+	chrono::high_resolution_clock::time_point startTime; // Timmer that calculate transmission time and rate
+	bool timingStarted = false;
 
 	// The main logic of load, send, recieve 
-	while ( done != 0)
+	while (allDone != 0)
 	{
 		// Update flow control (adjust send rate based on RTT)
 		if (connection.IsConnected())
@@ -326,7 +330,7 @@ int main(int argc, char* argv[])
 					{
 						// tell the user that all file content sent
 						printf("Finish Sent file: %s\n", fileName);
-						done = 0;
+						allDone = 0;
 					}
 				
 				}
@@ -354,6 +358,13 @@ int main(int argc, char* argv[])
 			{
 				if (fileBlock.FinishedReceivedAllData() != 0) 
 				{
+					if (!timingStarted)
+					{
+						startTime = chrono::high_resolution_clock::now();
+						timingStarted = true;
+						printf("Timing started: first data packet received.\n");
+					}
+
 					printf("----------------------------------------------------------------\n");
 					printf("Receiving data...\n");
 					int ret = fileBlock.ProcessReceivedPacket(packet, bytes_read);
@@ -365,14 +376,26 @@ int main(int argc, char* argv[])
 				}
 				else
 				{
+					// Record the end time and calculate the transmission time
+					auto endTime = chrono::high_resolution_clock::now();
+					chrono::duration<double> transferTime = endTime - startTime;
+					double timeSec = transferTime.count();
+
+					// Calculate transfer rate: file size (bytes) * 8 / (time seconds * 1e6) = Mbps
+					double speedMbps = (fileBlock.GetMetaPacket().fileSize * 8) / (timeSec * 1e6);
+
 					printf("*****************************************************************\n");
 					printf("All data received!\n");
+					printf("Transfer time: %.3f seconds, speed: %.3f Mbps\n", timeSec, speedMbps);
 					printf("Calculating the validation...\n");
 
 					if (fileBlock.VerifyFileContent())
 					{
 						// Save the data into the file
-						fileBlock.SaveFile();
+						if (fileBlock.SaveFile() == 0)
+						{
+							allDone = 0;
+						}
 					}
 				}
 			}

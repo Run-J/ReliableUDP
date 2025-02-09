@@ -50,7 +50,7 @@ bool FileBlock::VerifyFileContent()
     // Compare the computed MD5 with the metaPacket's MD5.
     if (memcmp(metaPacket.md5, computedMD5, MD5_HASH_LENGTH) == 0)
     {
-        printf("Checksum verification successful.\n");
+        printf("Checksum verification successful!\n");
         return true;
     }
     else
