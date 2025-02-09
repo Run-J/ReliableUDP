@@ -1,10 +1,19 @@
+// File Name: FileProcess.cpp
+// Date: 2025-02
+// File Description:
+//   This file implements file handling operations for a reliable UDP-based file transfer system. 
+//   It provides functionalities to load a file, split it into blocks for transmission, verify its integrity using MD5, 
+//   and reassemble received blocks back into a complete file.
+
 #include "FileProcess.h"
 
 
-//
-//
-//
-//
+
+// Function Name: SaveFile
+// Parameters: None
+// Return Value: int - Returns 0 on success, -1 if an error occurs (e.g., file cannot be opened or written).
+// Description:
+//      -- Saves the received file data to disk using the filename stored in `metaPacket`.
 int FileBlock::SaveFile() const
 {
     // Open output file using the filename from metaPacket in binary mode.
@@ -31,11 +40,12 @@ int FileBlock::SaveFile() const
 }
 
 
+
 // Function Name: VerifyFileContent
-// Return:
-//   bool - Returns true if the MD5 values match, false otherwise.
+// Parameters: None
+// Return Value: bool - Returns true if the computed MD5 matches the expected MD5, false otherwise.
 // Function Description:
-//      -- Recomputes the MD5 checksum of the loaded file and compares it with the stored md5 value in metaPacket.
+//      -- Computes the MD5 checksum of the received file and compares it with the expected MD5 stored in `metaPacket`.
 bool FileBlock::VerifyFileContent()
 {
     // Compute MD5 of fileData
@@ -74,15 +84,25 @@ bool FileBlock::VerifyFileContent()
 }
 
 
-//
-//
+// Function Name: FinishedReceivedAllData
+// Parameters: None
+// Return Value: int - Returns 0 if all data has been received, otherwise returns -1.
+// Function Description:
+//      --  Checks whether all expected data packets have been received.
 int FileBlock::FinishedReceivedAllData()
 {
     return allDone;
 }
 
-//
-//
+
+
+// Function Name: ProcessReceivedPacket
+// Parameters:
+//   - const unsigned char* packet: Pointer to the received packet.
+//   - size_t packetSize: Size of the received packet.
+// Return Value: int - Returns 0 on success, -1 if the packet is invalid or unrecognized.
+// Function Description:
+//      -- Processes an incoming packet, either updating metadata (`MetaPacket`) or storing file data (`BlockPacket`).
 int FileBlock::ProcessReceivedPacket(const unsigned char* packet, size_t packetSize)
 {
     // Check that the packet is valid and has at least one full packet's size.
@@ -155,7 +175,7 @@ int FileBlock::ProcessReceivedPacket(const unsigned char* packet, size_t packetS
 }
 
 
-//
+// Accessor of blocks
 //
 vector<BlockPacket> FileBlock::GetBlocks(void)
 {
@@ -163,21 +183,21 @@ vector<BlockPacket> FileBlock::GetBlocks(void)
 }
 
 
-//
-//
+// Accessor of metaPacket
+// Return Value: const MetaPacket& - Returns a reference to the stored metadata packet.
 const MetaPacket& FileBlock::GetMetaPacket(void)
 {
     return metaPacket;
 }
 
 
-// LoadFile:
-//   Loads the file from disk, splits it into blocks for transmission,
-//   and computes the MD5 checksum.
+// Function Name: LoadFile
 // Parameters:
-//   const char* filename - The file name to load.
-// Return:
-//   int - Returns the number of blocks on success, or -1 on error.
+//   - const char* filename: The name of the file to load.
+// Return Value: 
+//      -- int - Returns the number of blocks on success, or -1 if an error occurs.
+// Function Description:
+//      -- Loads a file from disk, computes its MD5 checksum, and splits it into smaller blocks for transmission.
 int FileBlock::LoadFile(const char* filename)
 {
     // Check that filename is valid

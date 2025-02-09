@@ -1,3 +1,8 @@
+// File Name: FileProcess.h
+// Date: 2025-02
+// File Description: 
+//      -- Including all of method prototypes of FileBlock class
+
 #ifndef _FILEPROCESS_H_
 #define _FILEPROCESS_H_
 
@@ -47,27 +52,17 @@ public:
     // Checking document integrity
     bool VerifyFileContent();
 
-    //  Inform if received all data
+    // Inform flag if received all data
     int FinishedReceivedAllData();
 
     // Parsing received data
     int ProcessReceivedPacket(const unsigned char* packet, size_t packetSize);
 
-    // LoadFile: Loads the file, computes MD5 and slices file into blocks
+    // Reads a file from disk, computes its MD5 checksum, and splits it into blocks.
     int LoadFile(const char* filename);
 
-    //
+    // Writes received file data to disk after successful transmission.
     int SaveFile() const;
-
-
-
-    // SaveFile:
-    //   Reconstructs the file from the loaded blocks and saves it to disk.
-    // Parameters:
-    //   const char* filename (optional) - The output file name.
-    // Return:
-    //   int - Returns the number of bytes written on success, or -1 on error.
-    // int SaveFile(const char* filename = nullptr) const;
 
 };
 

@@ -1,8 +1,14 @@
-/*
-	Reliability and Flow Control Example
-	From "Networking for Game Programmers" - http://www.gaffer.org/networking-for-game-programmers
-	Author: Glenn Fiedler <gaffer@gaffer.org>
-*/
+// File Name: ReliableUDP.cpp
+// Date: 2025-02
+// File Description: 
+//   This file implements a reliable UDP-based file transfer system with flow control 
+//   and packet-based communication. It provides both server and client functionality
+//   for sending and receiving files over a network with error detection and retransmission.
+// Reference: 
+//	-- Reliability and Flow Control Example
+//	-- From "Networking for Game Programmers" - http://www.gaffer.org/networking-for-game-programmers
+//	-- Author: Glenn Fiedler <gaffer@gaffer.org>
+
 
 #include <iostream>
 #include <fstream>

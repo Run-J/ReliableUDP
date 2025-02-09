@@ -1,3 +1,10 @@
+// File Name: Protocol.h
+// Date: 2025-02
+// File Description:
+//      -- This file defines the network packet structures used in the reliable UDP-based file transfer system.
+//      -- It provides fixed-size packet definitions for metadata and data transmission, ensuring compatibility 
+//      -- between sender and receiver.
+
 #ifndef _PROTOCOL_H_
 #define _PROTOCOL_H_
 
@@ -5,7 +12,7 @@
 
 #define PACKET_SIZE 256  // whole packet
 #define MAX_FILENAME_LENGTH 100
-#define MD5_HASH_LENGTH 16
+#define MD5_HASH_LENGTH 16 
 #define PADDING_SIZE (PACKET_SIZE - sizeof(uint8_t) - MAX_FILENAME_LENGTH - sizeof(uint64_t) * 2 - MD5_HASH_LENGTH)
 
 #define PAYLOAD_SIZE   (PACKET_SIZE - sizeof(uint8_t) - sizeof(uint64_t)) // PACKET_SIZE - packetType - localSequence
