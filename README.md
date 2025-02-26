@@ -23,6 +23,10 @@ The protocol defines two types of packets:
 - **Meta Packet (File Metadata)**: Contains filename, file size, total number of blocks, and an MD5 checksum.
 - **Block Packet (File Data)**: Contains a sequence number and a data block.
 
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/6f423d90-87b8-4d1d-a9c3-5bcb49a41d24" alt="PacketTypes">
+</div>
+
 ### Protocol Flow
 #### Client (Sender) Workflow:
 1. The client reads the file, computes its MD5 checksum, and splits it into blocks.
