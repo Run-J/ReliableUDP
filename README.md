@@ -13,6 +13,7 @@ This project implements a **Reliable UDP-based File Transfer System**, designed 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/5dc6e842-4e12-4e41-9270-bf9469e88ed6" alt="PassingJPGDemo">
 </div>
+
 ---
 
 ## Features
