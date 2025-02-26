@@ -5,6 +5,16 @@ This project implements a **Reliable UDP-based File Transfer System**, designed 
 
 ---
 
+## Demo
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/e664b46b-434d-4cfe-9572-941d40c7b96c" alt="PassingJPGDemo">
+</div>
+
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/5dc6e842-4e12-4e41-9270-bf9469e88ed6" alt="PassingJPGDemo">
+</div>
+---
+
 ## Features
 - **Reliability Mechanism**: Uses sequence numbers and acknowledgments to track lost packets and ensure all data is received correctly.
 - **Error Detection with MD5**: Verifies file integrity at the receiver by comparing MD5 checksums before saving the file.
